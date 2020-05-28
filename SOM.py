@@ -5,9 +5,6 @@ Created on Sun Feb 15 22:53:06 2020
 @email: nikhillobo007@gmail.com
 """
 
-
-
-
 from tkinter import * 
 from tkinter.ttk import *
 from tkinter import messagebox
@@ -22,11 +19,21 @@ window = Tk()
 
 window.title("Self Organizing Maps")
 
+def dosomething(*args):
+    file=txt1.get()+".csv"
+    df=pd.read_csv("data/"+file,encoding='utf8',engine='python')
+    arr1=["None"]
+    for col in df.columns: 
+        arr1.append(col)
+        
+    txt9['values'] = (arr1)
+
 window.geometry('400x750')
 lbl1 = Label(window, text="Enter the dataset file name :")
 lbl1.place(x=30, y=30)
 txt1 = Entry(window ,width=15)
 txt1.place(x=230, y=30)
+txt1.bind("<FocusOut>",dosomething)
 txt1.focus()
 
 lbl2 = Label(window, text="Enter the dimension of Map :")
@@ -73,10 +80,10 @@ txt8.place(x=230, y=490)
 
 
 lbl9 = Label(window, text="Dependent Value :")
-lbl9.place(x=30, y=390)
+lbl9.place(x=30, y=330)
 
 txt9 = Combobox(window,width=14)
-txt9.place(x=230, y=390)
+txt9.place(x=230, y=330)
 
 
 """Defining the initial values. """
@@ -87,29 +94,34 @@ learning_rate=0
 epochs=0
 animation=""
 
-
 def find_bmu1(t, net, m,d):
     """
         Find the best matching unit for a given vector for 1- dimensional map.
     """
     bmu_idx = np.array([0])
     min_dist = np.iinfo(np.int).max
-    
+    sq_dist=0
     # calculate the distance between each neuron and the input vector
+    #print(net.shape[0])
     for x in range(net.shape[0]):
             w = net[x,:].reshape(m, 1)
-            
             if d!="None":
-                w[d]=0
-                t[d]=0 
+                for z in range(m):
+                    if z != d:
+                        sq_dist=(sq_dist+(w[z]-t[z])**2)
             
-            sq_dist = np.sum((w - t) ** 2)
+            else:
+                sq_dist = np.sum((w - t) ** 2)
+            
             sq_dist = np.sqrt(sq_dist)
             if sq_dist < min_dist:
                 min_dist = sq_dist # dist
                 bmu_idx = np.array([x]) # id
     
     bmu = net[bmu_idx[0], :].reshape(m, 1)
+    #print(bmu_idx)
+    #print(bmu)
+
     return (bmu, bmu_idx)
 
 def find_bmu2(t, net, m,d):
@@ -118,16 +130,20 @@ def find_bmu2(t, net, m,d):
     """
     bmu_idx = np.array([0, 0])
     min_dist = np.iinfo(np.int).max
-    
+    sq_dist=0
     # calculate the distance between each neuron and the input vector
     for x in range(net.shape[0]):
         for y in range(net.shape[1]):
             w = net[x, y, :].reshape(m, 1)
             if d!="None":
-                w[d]=0
-                t[d]=0
-           
-            sq_dist = np.sum((w - t) ** 2)
+                for z in range(m):
+                    if z != d:
+                        sq_dist=(sq_dist+(w[z]-t[z])**2)
+            
+            else:
+                sq_dist = np.sum((w - t) ** 2)
+            
+            
             sq_dist = np.sqrt(sq_dist)
             if sq_dist < min_dist:
                 min_dist = sq_dist # minimum distance calculation 
@@ -178,7 +194,7 @@ def clicked():
 
 
 btn1 = Button(window, text="train Map",width = 20,command=clicked)
-btn1.place(x=100,y=330)
+btn1.place(x=100,y=390)
 
 
 """Reading features and other parameters for displaying the map in different window on each click on the visualization button """
@@ -224,8 +240,12 @@ def visualize():
     #Feture reading
     f1=txt7.get() 
     f2=txt8.get()
-    win = g.GraphWin(f1+'--'+f2+' Projection', 900, 900) # give title and dimensions
-    win.yUp()
+    
+    
+    win = g.GraphWin(f1+'--'+f2+' Projection', 800, 800) # give title and dimensions
+    #win = g.GraphWin(f1+'--'+f2+' Projection')
+    win.setCoords(-30,-30,500,500)
+    #win.yUp()
     win.setBackground("white")
   
     
@@ -270,12 +290,8 @@ def visualize():
         if dimension==1:    
             for x in range(net.shape[0]):
                     w = net[x,:].reshape(m, 1)
-                    if dep!="None":
-                        w[dep]=0
-                        t[dep]=0
                     w_dist = np.sum((np.array([x]) - bmu_idx) ** 2)
                     w_dist = np.sqrt(w_dist)
-                    
                     if w_dist <= r:
                         # calculate the degree of influence
                         influence = calculate_influence(w_dist, r)
@@ -288,7 +304,7 @@ def visualize():
                         y1=dim[q]
                         # Setting the parameters for animation
                         # coloring the nuerons to green when they in the neighborhood region.
-                        head1 = g.Circle(g.Point(x1,y1),4)
+                        head1 = g.Circle(g.Point(x1,y1),2)
                         head1.setFill("green")
                         head1.setOutline("white")
                     else:
@@ -297,7 +313,7 @@ def visualize():
                         y1=dim[q]
                         # Setting the parameters for animation
                         # coloring the nuerons to red when they are outside the neighborhood region.
-                        head1 = g.Circle(g.Point(x1,y1),3)
+                        head1 = g.Circle(g.Point(x1,y1),2)
                         head1.setFill("red")
                         head1.setOutline("white") 
                         
@@ -327,7 +343,7 @@ def visualize():
                     dim=net[a,:]
                     x=dim[p]
                     y=dim[q]
-                    head1 = g.Circle(g.Point(x,y),3)
+                    head1 = g.Circle(g.Point(x,y),2)
                     head1.setFill("white")
                     head1.setOutline("white")
                     head1.draw(win)
@@ -336,9 +352,6 @@ def visualize():
             for x in range(net.shape[0]):
                 for y in range(net.shape[1]):
                     w = net[x,y,:].reshape(m,1)
-                    if dep!="None":
-                        w[dep]=0
-                        t[dep]=0
                     w_dist = np.sum((np.array([x,y]) - bmu_idx) ** 2)
                     w_dist = np.sqrt(w_dist)
                     
@@ -355,7 +368,7 @@ def visualize():
                         x1=dim[p]
                         y1=dim[q]
                       
-                        head1 = g.Circle(g.Point(x1,y1),4)
+                        head1 = g.Circle(g.Point(x1,y1),2)
                         head1.setFill("green")
                         head1.setOutline("white")
                     else:
@@ -363,7 +376,7 @@ def visualize():
                         x1=dim[p]
                         y1=dim[q]
                 
-                        head1 = g.Circle(g.Point(x1,y1),3)
+                        head1 = g.Circle(g.Point(x1,y1),2)
                         head1.setFill("red")
                         head1.setOutline("white") 
                         
@@ -450,7 +463,7 @@ def visualize():
                         dim=net[a, b,:]
                         x=dim[p]
                         y=dim[q]
-                        head1 = g.Circle(g.Point(x,y),3)
+                        head1 = g.Circle(g.Point(x,y),2)
                         head1.setFill("white")
                         head1.setOutline("white")
                         head1.draw(win)
@@ -463,7 +476,7 @@ def visualize():
             dim=net[a,:]
             x=dim[p]
             y=dim[q]
-            head1 = g.Circle(g.Point(x,y),3)
+            head1 = g.Circle(g.Point(x,y),2)
             head1.setFill("green")
             head1.setOutline("green")
             head1.draw(win)
@@ -482,7 +495,7 @@ def visualize():
                 dim=net[a, b,:]
                 x=dim[p]
                 y=dim[q]
-                head = g.Circle(g.Point(x,y),3)
+                head = g.Circle(g.Point(x,y),2)
                 head.setFill("green")
                 head.setOutline("green")
                 head.draw(win) 
